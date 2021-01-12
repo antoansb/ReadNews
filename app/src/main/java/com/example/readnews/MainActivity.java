@@ -2,12 +2,15 @@ package com.example.readnews;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
@@ -38,7 +41,6 @@ public class MainActivity extends AppCompatActivity {
 
         newsDB.execSQL("CREATE TABLE IF NOT EXISTS news (id INTEGER PRIMARY KEY, newsID, INTEGER, title VARCHAR, content VARCHAR)");
 
-        updateListView();
 
         DownloadData dlData = new DownloadData();
         try {
@@ -52,6 +54,18 @@ public class MainActivity extends AppCompatActivity {
         ListView listView = findViewById(R.id.listView);
         arrayAdapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, titles);
         listView.setAdapter(arrayAdapter);
+
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                Intent intent = new Intent(getApplicationContext(), NewsActivity.class);
+                intent.putExtra("content", content.get(i));
+
+                startActivity(intent);
+            }
+        });
+
+        updateListView();
     }
 
     public void updateListView() {
@@ -68,7 +82,7 @@ public class MainActivity extends AppCompatActivity {
                 titles.add(cursor.getString(titleIndex));
                 content.add(cursor.getString(contentIndex));
 
-            } while (cursor.moveToFirst());
+            } while (cursor.moveToNext());
 
             arrayAdapter.notifyDataSetChanged();
         }
