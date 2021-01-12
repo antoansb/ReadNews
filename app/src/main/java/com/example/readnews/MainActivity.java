@@ -2,6 +2,9 @@ package com.example.readnews;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteStatement;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
@@ -20,13 +23,22 @@ import java.util.ArrayList;
 public class MainActivity extends AppCompatActivity {
 
     ArrayList<String> titles = new ArrayList<>();
+    ArrayList<String> content = new ArrayList<>();
 
     ArrayAdapter arrayAdapter;
+
+    SQLiteDatabase newsDB;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        newsDB = this.openOrCreateDatabase("News", MODE_PRIVATE, null);
+
+        newsDB.execSQL("CREATE TABLE IF NOT EXISTS news (id INTEGER PRIMARY KEY, newsID, INTEGER, title VARCHAR, content VARCHAR)");
+
+        updateListView();
 
         DownloadData dlData = new DownloadData();
         try {
@@ -40,6 +52,26 @@ public class MainActivity extends AppCompatActivity {
         ListView listView = findViewById(R.id.listView);
         arrayAdapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, titles);
         listView.setAdapter(arrayAdapter);
+    }
+
+    public void updateListView() {
+        Cursor cursor = newsDB.rawQuery("SELECT * FROM news", null);
+        int contentIndex = cursor.getColumnIndex("content");
+        int titleIndex = cursor.getColumnIndex("title");
+
+        if (cursor.moveToFirst()) {
+            titles.clear();
+            content.clear();
+
+            do {
+
+                titles.add(cursor.getString(titleIndex));
+                content.add(cursor.getString(contentIndex));
+
+            } while (cursor.moveToFirst());
+
+            arrayAdapter.notifyDataSetChanged();
+        }
     }
 
     public class DownloadData extends AsyncTask<String, Void, String> {
@@ -77,6 +109,8 @@ public class MainActivity extends AppCompatActivity {
                 if (jsonArray.length() < 20) {
                     numberOfNews = jsonArray.length();
                 }
+
+                newsDB.execSQL("DELETE FROM news");
 
                 for (int i=0; i<numberOfNews; i++) {
                     String articleId = jsonArray.getString(i);
@@ -117,6 +151,13 @@ public class MainActivity extends AppCompatActivity {
 
                         Log.i("HTML", articleContent);
 
+                        String sql = "INSERT INTO news (newsId, title, content) VALUES (?, ?, ?)";
+                        SQLiteStatement statement = newsDB.compileStatement(sql);
+                        statement.bindString(1, articleId);
+                        statement.bindString(2, articleTitle);
+                        statement.bindString(3, articleContent);
+                        statement.execute();
+
                     }
                 }
 
@@ -129,6 +170,13 @@ public class MainActivity extends AppCompatActivity {
             }
 
             return null;
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+
+            updateListView();
         }
     }
 
