@@ -1,1 +1,1 @@
-# ReadNews
+Simple Android App that shows a list of various news to the user, who can then click on a single news and read it. Done using Android Studio IDE, Java, SQLite database for storing and API: https://github.com/HackerNews/API
